@@ -18,7 +18,7 @@ export default function EditProfilePage() {
         setForm({ 
           username: res.data.username, 
           phoneNumber: res.data.phoneNumber || '',
-          address: res.data.address || '' // 🏠 ดึงที่อยู่เดิมมาโชว์
+          address: res.data.address || ''
         });
       } catch (error) { router.push('/login'); }
     };
@@ -27,37 +27,84 @@ export default function EditProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ✅ 1. ล้างช่องว่างและขีดออกให้เหลือแต่ตัวเลข
+    const cleanPhone = form.phoneNumber.replace(/[- ]/g, '');
+
+    // ✅ 2. เช็ค Regex หน้าบ้านก่อนส่งไปหลังบ้าน
+    const phoneRegex = /^(06|08|09)\d{8}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      alert('เบอร์โทรศัพท์ต้องขึ้นด้วย 06, 08, 09 และมี 10 หลักเท่านั้น');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.patch(`/users/${user._id}`, form);
+      // ส่งข้อมูลที่ล้างเบอร์โทรเรียบร้อยแล้วไปอัปเดต
+      const res = await api.patch(`/users/${user._id}`, { ...form, phoneNumber: cleanPhone });
       localStorage.setItem('user', JSON.stringify(res.data));
-      alert('บันทึกข้อมูลสำเร็จ!');
-      window.location.href = '/profile';
+      alert('บันทึกข้อมูลส่วนตัวสำเร็จ!');
+      window.location.reload();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'เกิดข้อผิดพลาด');
+      alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-6">
-      <div className="max-w-md mx-auto bg-white rounded-3xl shadow-sm border p-8">
-        <h1 className="text-2xl font-black text-gray-900 mb-6">📝 แก้ไขข้อมูลส่วนตัว</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 font-sans">
-          <div>
-            <label className="block text-xs font-black text-gray-400 uppercase mb-1">ชื่อผู้ใช้งาน</label>
-            <input type="text" required value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+    <div className="min-h-screen bg-gray-50 py-12 px-6 font-sans">
+      <div className="max-w-md mx-auto bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-10">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">📝</div>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">แก้ไขโปรไฟล์</h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ชื่อผู้ใช้งาน (Display Name)</label>
+            <input 
+              type="text" 
+              required 
+              value={form.username} 
+              onChange={(e) => setForm({...form, username: e.target.value})} 
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+              placeholder="กรอกชื่อที่ต้องการให้แสดง..."
+            />
           </div>
-          <div>
-            <label className="block text-xs font-black text-gray-400 uppercase mb-1">เบอร์โทรศัพท์</label>
-            <input type="tel" value={form.phoneNumber} onChange={(e) => setForm({...form, phoneNumber: e.target.value})} className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">เบอร์โทรศัพท์ติดต่อ (06, 08, 09)</label>
+            <input 
+              type="tel" 
+              required
+              value={form.phoneNumber} 
+              onChange={(e) => setForm({...form, phoneNumber: e.target.value})} 
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+              placeholder="เช่น 081-234-5678"
+            />
           </div>
-          <div>
-            <label className="block text-xs font-black text-gray-400 uppercase mb-1">ที่อยู่จัดส่ง / ติดต่อ</label>
-            <textarea rows={3} value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="บ้านเลขที่, ถนน, แขวง/ตำบล..." />
+
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ที่อยู่สำหรับการจัดส่ง / ติดต่อ</label>
+            <textarea 
+              rows={4} 
+              required
+              value={form.address} 
+              onChange={(e) => setForm({...form, address: e.target.value})} 
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800 resize-none" 
+              placeholder="เลขที่บ้าน, ถนน, แขวง/ตำบล, เขต/อำเภอ, จังหวัด..." 
+            />
           </div>
-          <button type="submit" disabled={loading} className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase tracking-widest">
-            {loading ? 'กำลังบันทึก...' : 'อัปเดตข้อมูล'}
-          </button>
+
+          <div className="pt-4">
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-[1.5rem] hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest disabled:bg-gray-200 disabled:shadow-none"
+            >
+              {loading ? 'กำลังบันทึกข้อมูล...' : 'บันทึกการเปลี่ยนแปลง'}
+            </button>
+            <p className="text-center text-[10px] text-gray-300 font-bold uppercase mt-6 tracking-tighter italic">ระบบจะทำการตรวจสอบข้อมูลหลังบันทึก</p>
+          </div>
         </form>
       </div>
     </div>

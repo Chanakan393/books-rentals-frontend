@@ -12,7 +12,7 @@ interface RentalHistory {
   };
   cost: number;
   status: 'booked' | 'rented' | 'returned' | 'cancelled';
-  paymentStatus: 'pending' | 'verification' | 'paid' | 'refund_pending' | 'refunded' | 'cancelled';
+  paymentStatus: 'pending' | 'verification' | 'paid' | 'refund_verification' | 'refund_pending' | 'refunded' | 'refund_rejected' | 'cancelled';
   borrowDate: string;
   dueDate: string;
 }
@@ -37,7 +37,6 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  // เน้นสถานะการยืม-คืนให้ชัดเจนขึ้น
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       booked: 'bg-blue-600 text-white shadow-sm',
@@ -46,6 +45,19 @@ export default function HistoryPage() {
       cancelled: 'bg-red-600 text-white shadow-sm',
     };
     return styles[status] || 'bg-gray-500 text-white';
+  };
+
+  const getPaymentBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-700',
+      verification: 'bg-purple-100 text-purple-700',
+      paid: 'bg-green-100 text-green-700',
+      refund_verification: 'bg-blue-100 text-blue-700 animate-pulse font-bold', // ✨ สำหรับรอแอดมินโอนคืน
+      refund_pending: 'bg-pink-100 text-pink-700',
+      refunded: 'bg-blue-100 text-blue-700 font-black',
+      refund_rejected: 'bg-red-100 text-red-700 animate-pulse font-black',
+    };
+    return styles[status] || 'bg-gray-100 text-gray-700';
   };
 
   const handleCancel = async (rentalId: string) => {
@@ -60,7 +72,7 @@ export default function HistoryPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-20 italic text-gray-500">กำลังโหลดประวัติการเช่าของคุณ...</div>;
+  if (loading) return <div className="text-center py-20 italic text-gray-500 font-sans">กำลังโหลดประวัติการเช่าของคุณ...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-6 font-sans">
@@ -82,10 +94,7 @@ export default function HistoryPage() {
           <div className="bg-white p-20 text-center rounded-[2rem] shadow-sm border border-gray-100">
             <span className="text-6xl mb-6 block animate-bounce">📚</span>
             <p className="text-gray-500 text-lg font-bold">ยังไม่มีประวัติการเช่า</p>
-            <button 
-              onClick={() => router.push('/')}
-              className="mt-6 text-blue-600 font-black hover:underline decoration-2 underline-offset-4"
-            >
+            <button onClick={() => router.push('/')} className="mt-6 text-blue-600 font-black hover:underline decoration-2">
               ไปเลือกดูหนังสือหน้าแรก →
             </button>
           </div>
@@ -93,21 +102,13 @@ export default function HistoryPage() {
           <div className="flex flex-col gap-8">
             {history.map((item) => {
               const canCancel = item.status === 'booked';
+              const needsNewSlip = item.paymentStatus === 'pending' && item.status !== 'cancelled';
               
               return (
-                <div 
-                  key={item._id} 
-                  className="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group"
-                >
+                <div key={item._id} className="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group">
                   <div className="flex flex-col md:flex-row">
-                    {/* ปกหนังสือ */}
                     <div className="w-full md:w-44 bg-gray-100 shrink-0 relative overflow-hidden">
-                      <img 
-                        src={item.bookId?.coverImage} 
-                        alt={item.bookId?.title} 
-                        className="w-full h-64 md:h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {/* แถบราคาแบบไม่เด่น วางทับบนรูป */}
+                      <img src={item.bookId?.coverImage} alt={item.bookId?.title} className="w-full h-64 md:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-bold">
                         {item.cost} ฿
                       </div>
@@ -116,52 +117,33 @@ export default function HistoryPage() {
                     <div className="flex-1 p-8 flex flex-col justify-between">
                       <div className="flex justify-between items-start gap-4 mb-6">
                         <div className="flex-1">
-                          <h3 className="text-2xl font-black text-gray-800 leading-tight mb-4 group-hover:text-blue-600 transition-colors">
-                            {item.bookId?.title}
-                          </h3>
-                          <div className="flex items-center gap-3">
-                            {/* สถานะการยืมที่ต้องการให้เด่น */}
-                            <span className={`px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest ${getStatusBadge(item.status)}`}>
-                              {item.status}
-                            </span>
-                            {/* สถานะการจ่ายแบบตัวเล็ก ไม่เด่น */}
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                              • Payment: {item.paymentStatus}
-                            </span>
+                          <h3 className="text-2xl font-black text-gray-800 leading-tight mb-4 group-hover:text-blue-600 transition-colors">{item.bookId?.title}</h3>
+                          <div className="flex flex-wrap gap-3">
+                            <span className={`px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest ${getStatusBadge(item.status)}`}>{item.status}</span>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getPaymentBadge(item.paymentStatus)}`}>{item.paymentStatus === 'refund_verification' ? 'รอแอดมินคืนเงิน' : item.paymentStatus}</span>
                           </div>
                         </div>
-
-                        {/* ปุ่มยกเลิก */}
                         {canCancel && (
-                          <button 
-                            onClick={() => handleCancel(item._id)}
-                            className="shrink-0 text-[10px] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 px-3 py-1.5 rounded-xl font-black transition-all uppercase"
-                          >
-                            ยกเลิก
-                          </button>
+                          <button onClick={() => handleCancel(item._id)} className="shrink-0 text-[10px] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 px-3 py-1.5 rounded-xl font-black transition-all uppercase">ยกเลิกการจอง</button>
                         )}
                       </div>
                       
-                      {/* แถบข้อมูลวันที่และกำหนดคืนที่เน้นให้เด่น */}
+                      {needsNewSlip && (
+                        <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex justify-between items-center animate-pulse">
+                           <p className="text-[11px] font-bold text-amber-700 italic">⚠️ สลิปไม่ผ่านการตรวจสอบ โปรดอัปโหลดใหม่อีกครั้ง</p>
+                           <button onClick={() => router.push(`/payment?rentalId=${item._id}&amount=${item.cost}`)} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black hover:bg-amber-700 transition">อัปโหลดสลิปใหม่</button>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-50 items-end">
                         <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">วันที่เริ่มยืม</p>
-                          <p className="text-gray-800 font-extrabold text-base">
-                            {new Date(item.borrowDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
+                          <p className="text-gray-800 font-extrabold text-base">{new Date(item.borrowDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
-                        
                         <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex flex-col justify-center items-center shadow-inner">
                           <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">ต้องคืนภายใน (RETURN BY)</p>
-                          <p className="text-red-600 font-black text-xl leading-none">
-                            {new Date(item.dueDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
+                          <p className="text-red-600 font-black text-xl leading-none">{new Date(item.dueDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
-                      </div>
-
-                      {/* Rental ID แบบจางๆ ด้านล่างสุด */}
-                      <div className="mt-4 flex justify-end">
-                        <p className="text-[9px] font-mono text-gray-300 uppercase tracking-tighter">ID: {item._id}</p>
                       </div>
                     </div>
                   </div>
