@@ -8,7 +8,7 @@ export default function EditProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [form, setForm] = useState({ username: '', phoneNumber: '', address: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', phoneNumber: '', address: '' });
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -17,6 +17,8 @@ export default function EditProfilePage() {
         setUser(res.data);
         setForm({ 
           username: res.data.username, 
+          email: res.data.email,
+          password: '',
           phoneNumber: res.data.phoneNumber || '',
           address: res.data.address || ''
         });
@@ -28,20 +30,38 @@ export default function EditProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ✅ 1. ล้างช่องว่างและขีดออกให้เหลือแต่ตัวเลข
+    // 🚀 1. เช็คชื่อผู้ใช้ (ห้ามเป็นตัวเลขล้วน)
+    if (/^\d+$/.test(form.username.trim())) {
+      alert('ชื่อผู้ใช้งานต้องมีตัวอักษรผสมอยู่ด้วย ไม่สามารถเป็นตัวเลขล้วนได้');
+      return;
+    }
+
+    // 2. ล้างช่องว่างและขีดออกให้เหลือแต่ตัวเลข
     const cleanPhone = form.phoneNumber.replace(/[- ]/g, '');
 
-    // ✅ 2. เช็ค Regex หน้าบ้านก่อนส่งไปหลังบ้าน
+    // 3. เช็คเงื่อนไขอื่นๆ
     const phoneRegex = /^(06|08|09)\d{8}$/;
     if (!phoneRegex.test(cleanPhone)) {
       alert('เบอร์โทรศัพท์ต้องขึ้นด้วย 06, 08, 09 และมี 10 หลักเท่านั้น');
       return;
     }
+    if (form.address.trim().length < 10) {
+      alert('ที่อยู่ต้องมีความยาวอย่างน้อย 10 ตัวอักษร');
+      return;
+    }
+    if (form.password && (form.password.length < 8 || form.password.length > 20)) {
+      alert('รหัสผ่านต้องมีความยาวระหว่าง 8 ถึง 20 ตัวอักษร');
+      return;
+    }
 
     setLoading(true);
     try {
-      // ส่งข้อมูลที่ล้างเบอร์โทรเรียบร้อยแล้วไปอัปเดต
-      const res = await api.patch(`/users/${user._id}`, { ...form, phoneNumber: cleanPhone });
+      const payload: any = { ...form, phoneNumber: cleanPhone };
+      if (!payload.password) {
+        delete payload.password;
+      }
+
+      const res = await api.patch(`/users/${user._id}`, payload);
       localStorage.setItem('user', JSON.stringify(res.data));
       alert('บันทึกข้อมูลส่วนตัวสำเร็จ!');
       window.location.reload();
@@ -62,20 +82,38 @@ export default function EditProfilePage() {
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ชื่อผู้ใช้งาน (Display Name)</label>
             <input 
-              type="text" 
-              required 
+              type="text" required maxLength={20}
               value={form.username} 
               onChange={(e) => setForm({...form, username: e.target.value})} 
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
-              placeholder="กรอกชื่อที่ต้องการให้แสดง..."
+            />
+          </div>
+
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">อีเมล (Email)</label>
+            <input 
+              type="email" required 
+              value={form.email} 
+              onChange={(e) => setForm({...form, email: e.target.value})} 
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+            />
+          </div>
+
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ตั้งรหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</label>
+            <input 
+              type="password" minLength={8} maxLength={20}
+              value={form.password} 
+              onChange={(e) => setForm({...form, password: e.target.value})} 
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+              placeholder="•••••••• (8-20 ตัวอักษร)"
             />
           </div>
 
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">เบอร์โทรศัพท์ติดต่อ (06, 08, 09)</label>
             <input 
-              type="tel" 
-              required
+              type="tel" required
               value={form.phoneNumber} 
               onChange={(e) => setForm({...form, phoneNumber: e.target.value})} 
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
@@ -86,8 +124,7 @@ export default function EditProfilePage() {
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ที่อยู่สำหรับการจัดส่ง / ติดต่อ</label>
             <textarea 
-              rows={4} 
-              required
+              rows={4} required minLength={10}
               value={form.address} 
               onChange={(e) => setForm({...form, address: e.target.value})} 
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800 resize-none" 

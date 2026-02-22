@@ -13,27 +13,47 @@ export default function ManageBookPage() {
   const [imageType, setImageType] = useState<'url' | 'file'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [form, setForm] = useState({
-    title: '',
-    author: '',
-    category: '',
-    description: '',
-    coverImage: '',
-    stock: { total: 0, available: 0 },
-    pricing: { day3: 0, day5: 0, day7: 0 }
+  const [form, setForm] = useState<any>({
+    title: '', author: '', description: '', coverImage: '',
+    category: [], // 🚀 เปลี่ยนเป็น Array ว่าง
+    stock: { total: '', available: '' },
+    pricing: { day3: '', day5: '', day7: '' }
   });
 
-  // ตรวจสอบความถูกต้องของสต็อก (ห้ามพร้อมใช้งาน > สต็อกทั้งหมด)
-  const isStockInvalid = form.stock.available > form.stock.total;
+  const isStockInvalid = Number(form.stock?.available || 0) > Number(form.stock?.total || 0);
+
+  // รายการหมวดหมู่ทั้งหมด
+  const CATEGORIES = [
+    "มังงะ (Manga)", "นิยาย (Novel)", "การ์ตูนความรู้", "แฟนตาซี", 
+    "สืบสวนสอบสวน", "จิตวิทยา", "เทคโนโลยี", "ธุรกิจ", "ประวัติศาสตร์", "อื่นๆ"
+  ];
 
   useEffect(() => {
     if (isEdit) {
       const fetchBook = async () => {
         try {
           const res = await api.get(`/books/${params.id}`);
-          setForm(res.data);
-          // ถ้าเป็น path ที่ขึ้นต้นด้วย /uploads แสดงว่าเป็นโหมด File
-          if (res.data.coverImage?.startsWith('/uploads')) {
+          const data = res.data;
+          
+          setForm({
+            title: data.title || '',
+            author: data.author || '',
+            description: data.description || '',
+            coverImage: data.coverImage || '',
+            // 🚀 จัดการ Category: ถ้าของเก่าเป็น String ให้จับใส่ Array ถ้าเป็น Array อยู่แล้วก็ใช้ได้เลย
+            category: Array.isArray(data.category) ? data.category : (data.category ? [data.category] : []),
+            stock: { 
+              total: data.stock?.total ?? '', 
+              available: data.stock?.available ?? '' 
+            },
+            pricing: { 
+              day3: data.pricing?.day3 ?? '', 
+              day5: data.pricing?.day5 ?? '', 
+              day7: data.pricing?.day7 ?? '' 
+            }
+          });
+
+          if (data.coverImage?.startsWith('/uploads')) {
             setImageType('file');
           }
         } catch (error) {
@@ -48,9 +68,25 @@ export default function ManageBookPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚀 ดักจับ Error ก่อนส่งข้อมูล
+    const t = Number(form.stock?.total || 0);
+    const d3 = Number(form.pricing?.day3 || 0);
+    const d5 = Number(form.pricing?.day5 || 0);
+    const d7 = Number(form.pricing?.day7 || 0);
+
+    if (t <= 0) {
+      alert('สต็อกทั้งหมดต้องมีอย่างน้อย 1 เล่ม!');
+      return;
+    }
+    if (d3 <= 0 || d5 <= 0 || d7 <= 0) {
+      alert('ราคาเช่าต้องมากกว่า 0 บาท!');
+      return;
+    }
     if (isStockInvalid) {
       alert('จำนวนหนังสือพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด!');
+      return;
+    }
+    if (d3 >= d5 || d5 >= d7) {
+      alert('ราคาเช่าไม่ถูกต้อง! ต้องเรียงลำดับจากน้อยไปมาก (3 วัน < 5 วัน < 7 วัน)');
       return;
     }
 
@@ -58,7 +94,6 @@ export default function ManageBookPage() {
     try {
       let finalCoverImage = form.coverImage;
 
-      // 🚀 จัดการอัปโหลดรูปภาพถ้าเป็นโหมด File
       if (imageType === 'file' && selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -68,7 +103,19 @@ export default function ManageBookPage() {
         finalCoverImage = uploadRes.data.url;
       }
 
-      const payload = { ...form, coverImage: finalCoverImage };
+      const payload = { 
+        ...form, 
+        coverImage: finalCoverImage,
+        stock: {
+          total: t,
+          available: Number(form.stock?.available || 0)
+        },
+        pricing: {
+          day3: d3,
+          day5: d5,
+          day7: d7
+        }
+      };
 
       if (isEdit) {
         await api.patch(`/books/${params.id}`, payload);
@@ -86,6 +133,11 @@ export default function ManageBookPage() {
     }
   };
 
+  const handleNumberChange = (value: string) => {
+    const cleanValue = value.replace(/-/g, ''); 
+    return cleanValue === '' ? '' : cleanValue; 
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-6">
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-white rounded-3xl shadow-sm border p-8">
@@ -97,19 +149,42 @@ export default function ManageBookPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">ชื่อหนังสือ</label>
-              <input type="text" required value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" required value={form.title || ''} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">ผู้แต่ง</label>
-              <input type="text" required value={form.author} onChange={(e) => setForm({...form, author: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">หมวดหมู่</label>
-              <input type="text" required value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" required value={form.author || ''} onChange={(e) => setForm({...form, author: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
-            {/* ส่วนจัดการรูปภาพ Hybrid */}
-            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+            {/* 🚀 ส่วนหมวดหมู่ (Checkbox แบบเลือกหลายอัน) */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">หมวดหมู่ (เลือกได้มากกว่า 1)</label>
+              <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 h-40 overflow-y-auto">
+                {CATEGORIES.map((cat) => (
+                  <label key={cat} className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={form.category?.includes(cat)}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        const currentCats = form.category || [];
+                        if (isChecked) {
+                          setForm({ ...form, category: [...currentCats, cat] });
+                        } else {
+                          setForm({ ...form, category: currentCats.filter((c: string) => c !== cat) });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 transition-colors select-none">{cat}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            {/* --------------------------------- */}
+
+            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 mt-4">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-xs font-bold text-blue-900 uppercase">รูปหน้าปก</label>
                 <div className="flex bg-white rounded-lg p-1 shadow-sm border">
@@ -118,48 +193,72 @@ export default function ManageBookPage() {
                 </div>
               </div>
               {imageType === 'url' ? (
-                <input type="text" placeholder="https://..." value={form.coverImage} onChange={(e) => setForm({...form, coverImage: e.target.value})} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
+                <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({...form, coverImage: e.target.value})} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
               ) : (
                 <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
               )}
             </div>
           </div>
 
-          {/* สต็อกและราคา */}
-          <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+          <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 h-fit">
             <p className="font-bold text-gray-700 mb-2">📊 การตั้งค่าสต็อกและราคา</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase">สต็อกทั้งหมด</label>
-                <input type="number" required value={form.stock.total} onChange={(e) => setForm({...form, stock: {...form.stock, total: +e.target.value}})} className="w-full p-2 border rounded-lg" />
+                <input 
+                  type="number" min="1" required 
+                  value={form.stock?.total ?? ''} 
+                  onChange={(e) => setForm({...form, stock: {...form.stock, total: handleNumberChange(e.target.value)}})} 
+                  className="w-full p-2 border rounded-lg" 
+                />
               </div>
               <div>
                 <label className={`block text-[10px] font-bold uppercase ${isStockInvalid ? 'text-red-500' : 'text-gray-400'}`}>พร้อมใช้งาน</label>
-                <input type="number" required value={form.stock.available} onChange={(e) => setForm({...form, stock: {...form.stock, available: +e.target.value}})} className={`w-full p-2 border rounded-lg ${isStockInvalid ? 'border-red-500 bg-red-50' : ''}`} />
+                <input 
+                  type="number" min="0" required 
+                  value={form.stock?.available ?? ''} 
+                  onChange={(e) => setForm({...form, stock: {...form.stock, available: handleNumberChange(e.target.value)}})} 
+                  className={`w-full p-2 border rounded-lg ${isStockInvalid ? 'border-red-500 bg-red-50' : ''}`} 
+                />
               </div>
             </div>
             {isStockInvalid && <p className="text-[10px] text-red-500 font-bold leading-tight">⚠️ จำนวนพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด</p>}
             
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-4 border-t border-gray-200 mt-4">
               <div className="flex justify-between items-center text-sm">
-                <span>ราคาเช่า 3 วัน</span>
-                <input type="number" required value={form.pricing.day3} onChange={(e) => setForm({...form, pricing: {...form.pricing, day3: +e.target.value}})} className="w-24 p-2 border rounded-lg text-right font-bold text-blue-600" />
+                <span className="font-bold text-gray-600">ราคาเช่า 3 วัน</span>
+                <input 
+                  type="number" min="1" required 
+                  value={form.pricing?.day3 ?? ''} 
+                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day3: handleNumberChange(e.target.value)}})} 
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                />
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>ราคาเช่า 5 วัน</span>
-                <input type="number" required value={form.pricing.day5} onChange={(e) => setForm({...form, pricing: {...form.pricing, day5: +e.target.value}})} className="w-24 p-2 border rounded-lg text-right font-bold text-blue-600" />
+                <span className="font-bold text-gray-600">ราคาเช่า 5 วัน</span>
+                <input 
+                  type="number" min="1" required 
+                  value={form.pricing?.day5 ?? ''} 
+                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day5: handleNumberChange(e.target.value)}})} 
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                />
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>ราคาเช่า 7 วัน</span>
-                <input type="number" required value={form.pricing.day7} onChange={(e) => setForm({...form, pricing: {...form.pricing, day7: +e.target.value}})} className="w-24 p-2 border rounded-lg text-right font-bold text-blue-600" />
+                <span className="font-bold text-gray-600">ราคาเช่า 7 วัน</span>
+                <input 
+                  type="number" min="1" required 
+                  value={form.pricing?.day7 ?? ''} 
+                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day7: handleNumberChange(e.target.value)}})} 
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                />
               </div>
             </div>
           </div>
         </div>
 
         <div className="mt-8">
-          <label className="block text-xs font-bold text-gray-400 uppercase mb-1">คำอธิบาย</label>
-          <textarea rows={4} value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-1">คำอธิบายเรื่องย่อ</label>
+          <textarea rows={4} value={form.description || ''} onChange={(e) => setForm({...form, description: e.target.value})} className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
         </div>
 
         <div className="mt-8 flex gap-4">
