@@ -12,10 +12,16 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
+  // 🚀 ปรับ Logic คิดค่าปรับให้เป็นแบบ "ปฏิทินเต็มวัน" (ล้างเวลาทิ้ง) ให้ตรงกับหลังบ้าน
   const calculateFine = (dueDate: string) => {
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
     const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    
     if (now <= due) return 0;
+    
     const diffTime = Math.abs(now.getTime() - due.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays * 10; 
@@ -124,7 +130,12 @@ export default function AdminDashboard() {
                   return (
                     <div key={p._id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6 animate-in fade-in duration-500">
                       <div className="w-full md:w-48 h-64 bg-gray-50 rounded-2xl overflow-hidden border shrink-0">
-                        <img src={`${process.env.NEXT_PUBLIC_API_URL}${p.slipUrl}`} className="w-full h-full object-contain" alt="Slip" />
+                        {/* 🚀 แก้ไข: รองรับทั้งรูประบบเก่า (Local) และระบบใหม่ (Cloudinary) */}
+                        <img 
+                          src={p.slipUrl?.startsWith('http') ? p.slipUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${p.slipUrl}`} 
+                          className="w-full h-full object-contain" 
+                          alt="Slip" 
+                        />
                       </div>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
