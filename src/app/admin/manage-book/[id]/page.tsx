@@ -13,19 +13,51 @@ export default function ManageBookPage() {
   const [imageType, setImageType] = useState<'url' | 'file'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // 🚀 กำหนดค่าเริ่มต้นเป็นสตริงว่างทั้งหมดเพื่อป้องกัน Uncontrolled Input Error
   const [form, setForm] = useState<any>({
-    title: '', author: '', description: '', coverImage: '',
-    category: [], // 🚀 เปลี่ยนเป็น Array ว่าง
+    title: '',
+    author: '',
+    description: '',
+    coverImage: '',
+    category: [],
     stock: { total: '', available: '' },
     pricing: { day3: '', day5: '', day7: '' }
   });
 
   const isStockInvalid = Number(form.stock?.available || 0) > Number(form.stock?.total || 0);
 
-  // รายการหมวดหมู่ทั้งหมด
   const CATEGORIES = [
-    "มังงะ (Manga)", "นิยาย (Novel)", "การ์ตูนความรู้", "แฟนตาซี", 
-    "สืบสวนสอบสวน", "จิตวิทยา", "เทคโนโลยี", "ธุรกิจ", "ประวัติศาสตร์", "อื่นๆ"
+    "ทั้งหมด",
+    // --- กลุ่มนิยายและวรรณกรรม ---
+    "นิยาย (Novel)", "นิยายแปลญี่ปุ่น", "นิยายแปลเกาหลี", "วรรณกรรมคลาสสิก", "วรรณกรรมไทย",
+    "วรรณกรรมเยาวชน", "เรื่องสั้น", "ไลท์โนเวล (Light Novel)", "นิยายวาย / การ์ตูนวาย",
+    "นิยายยูริ / การ์ตูนยูริ", "ย้อนยุค / อิงประวัติศาสตร์",
+
+    // --- กลุ่มแนวเรื่อง (Genre) ---
+    "แอ็กชัน (Action)", "แฟนตาซี (Fantasy)", "ระทึกขวัญ (Thriller)", "สืบสวนสอบสวน (Mystery)",
+    "อาชญากรรม", "ดราม่า", "โรแมนติก", "ตลก (Comedy)", "มิตรภาพ / ชีวิตวัยรุ่น", "เยียวยาจิตใจ",
+
+    // --- กลุ่มการ์ตูน ---
+    "มังงะ (Manga)", "การ์ตูนความรู้",
+
+    // --- กลุ่มความรู้และวิชาการ ---
+    "วิทยาศาสตร์", "ชีววิทยา", "ประวัติศาสตร์", "ปรัชญา", "จิตวิทยา", "สารคดี",
+    "ความรู้ทั่วไป", "ภาษาต่างประเทศ", "พจนานุกรม", "คู่มือเตรียมสอบ",
+
+    // --- กลุ่มพัฒนาตนเองและธุรกิจ ---
+    "การพัฒนาตนเอง (How To)", "บริหารธุรกิจ", "การเงินการลงทุน", "การตลาด / การจัดการ",
+
+    // --- กลุ่มคอมพิวเตอร์และเทคโนโลยี ---
+    "คอมพิวเตอร์ / โปรแกรมมิ่ง", "AI / Data Science", "Database", "เว็บดีไซน์", "คู่มือการใช้งาน",
+
+    // --- กลุ่มไลฟ์สไตล์ ---
+    "ท่องเที่ยว", "อาหาร", "สุขภาพ / ความงาม", "สัตว์เลี้ยง", "บ้านและสวน",
+    "งานอดิเรก / งานฝีมือ", "เกม", "โหราศาสตร์ / ดูดวง", "ธรรมะ / ศาสนา",
+
+    // --- กลุ่มแม่และเด็ก ---
+    "หนังสือเด็ก / นิทาน", "คู่มือเลี้ยงลูก (แม่และเด็ก)", "กิจกรรมเสริมทักษะ",
+
+    "หนังสือต่างประเทศ", "อื่นๆ"
   ];
 
   useEffect(() => {
@@ -34,27 +66,27 @@ export default function ManageBookPage() {
         try {
           const res = await api.get(`/books/${params.id}`);
           const data = res.data;
-          
+
           setForm({
             title: data.title || '',
             author: data.author || '',
             description: data.description || '',
             coverImage: data.coverImage || '',
-            // 🚀 จัดการ Category: ถ้าของเก่าเป็น String ให้จับใส่ Array ถ้าเป็น Array อยู่แล้วก็ใช้ได้เลย
             category: Array.isArray(data.category) ? data.category : (data.category ? [data.category] : []),
-            stock: { 
-              total: data.stock?.total ?? '', 
-              available: data.stock?.available ?? '' 
+            stock: {
+              total: data.stock?.total ?? '',
+              available: data.stock?.available ?? ''
             },
-            pricing: { 
-              day3: data.pricing?.day3 ?? '', 
-              day5: data.pricing?.day5 ?? '', 
-              day7: data.pricing?.day7 ?? '' 
+            pricing: {
+              day3: data.pricing?.day3 ?? '',
+              day5: data.pricing?.day5 ?? '',
+              day7: data.pricing?.day7 ?? ''
             }
           });
 
-          if (data.coverImage?.startsWith('/uploads')) {
-            setImageType('file');
+          if (data.coverImage?.startsWith('/uploads') || data.coverImage?.startsWith('http')) {
+            // หมายเหตุ: ถ้าใช้ Cloudinary ลิงก์จะเป็น http แต่เราอาจจะยังให้แอดมินเลือกสลับโหมดได้
+            setImageType(data.coverImage?.startsWith('http') && !data.coverImage?.includes('cloudinary') ? 'url' : 'file');
           }
         } catch (error) {
           alert('ไม่พบข้อมูลหนังสือ');
@@ -103,8 +135,8 @@ export default function ManageBookPage() {
         finalCoverImage = uploadRes.data.url;
       }
 
-      const payload = { 
-        ...form, 
+      const payload = {
+        ...form,
         coverImage: finalCoverImage,
         stock: {
           total: t,
@@ -134,8 +166,8 @@ export default function ManageBookPage() {
   };
 
   const handleNumberChange = (value: string) => {
-    const cleanValue = value.replace(/-/g, ''); 
-    return cleanValue === '' ? '' : cleanValue; 
+    const cleanValue = value.replace(/-/g, '');
+    return cleanValue === '' ? '' : cleanValue;
   };
 
   return (
@@ -149,20 +181,19 @@ export default function ManageBookPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">ชื่อหนังสือ</label>
-              <input type="text" required value={form.title || ''} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" required value={form.title || ''} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">ผู้แต่ง</label>
-              <input type="text" required value={form.author || ''} onChange={(e) => setForm({...form, author: e.target.value})} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" required value={form.author || ''} onChange={(e) => setForm({ ...form, author: e.target.value })} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
-            {/* 🚀 ส่วนหมวดหมู่ (Checkbox แบบเลือกหลายอัน) */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">หมวดหมู่ (เลือกได้มากกว่า 1)</label>
               <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 h-40 overflow-y-auto">
                 {CATEGORIES.map((cat) => (
                   <label key={cat} className="flex items-center gap-2 cursor-pointer group">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={form.category?.includes(cat)}
                       onChange={(e) => {
@@ -181,8 +212,6 @@ export default function ManageBookPage() {
                 ))}
               </div>
             </div>
-            
-            {/* --------------------------------- */}
 
             <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 mt-4">
               <div className="flex justify-between items-center mb-2">
@@ -193,9 +222,13 @@ export default function ManageBookPage() {
                 </div>
               </div>
               {imageType === 'url' ? (
-                <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({...form, coverImage: e.target.value})} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
+                // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({ ...form, coverImage: e.target.value })} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
               ) : (
-                <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                <div className="space-y-2">
+                  <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                  {isEdit && form.coverImage && <p className="text-[10px] text-gray-400 italic truncate">ไฟล์ปัจจุบัน: {form.coverImage}</p>}
+                </div>
               )}
             </div>
           </div>
@@ -205,51 +238,56 @@ export default function ManageBookPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase">สต็อกทั้งหมด</label>
-                <input 
-                  type="number" min="1" required 
-                  value={form.stock?.total ?? ''} 
-                  onChange={(e) => setForm({...form, stock: {...form.stock, total: handleNumberChange(e.target.value)}})} 
-                  className="w-full p-2 border rounded-lg" 
+                <input
+                  type="number" min="1" required
+                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                  value={form.stock?.total || ''}
+                  onChange={(e) => setForm({ ...form, stock: { ...form.stock, total: handleNumberChange(e.target.value) } })}
+                  className="w-full p-2 border rounded-lg"
                 />
               </div>
               <div>
                 <label className={`block text-[10px] font-bold uppercase ${isStockInvalid ? 'text-red-500' : 'text-gray-400'}`}>พร้อมใช้งาน</label>
-                <input 
-                  type="number" min="0" required 
-                  value={form.stock?.available ?? ''} 
-                  onChange={(e) => setForm({...form, stock: {...form.stock, available: handleNumberChange(e.target.value)}})} 
-                  className={`w-full p-2 border rounded-lg ${isStockInvalid ? 'border-red-500 bg-red-50' : ''}`} 
+                <input
+                  type="number" min="0" required
+                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                  value={form.stock?.available || ''}
+                  onChange={(e) => setForm({ ...form, stock: { ...form.stock, available: handleNumberChange(e.target.value) } })}
+                  className={`w-full p-2 border rounded-lg ${isStockInvalid ? 'border-red-500 bg-red-50' : ''}`}
                 />
               </div>
             </div>
             {isStockInvalid && <p className="text-[10px] text-red-500 font-bold leading-tight">⚠️ จำนวนพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด</p>}
-            
+
             <div className="space-y-3 pt-4 border-t border-gray-200 mt-4">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-bold text-gray-600">ราคาเช่า 3 วัน</span>
-                <input 
-                  type="number" min="1" required 
-                  value={form.pricing?.day3 ?? ''} 
-                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day3: handleNumberChange(e.target.value)}})} 
-                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                <input
+                  type="number" min="1" required
+                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                  value={form.pricing?.day3 || ''}
+                  onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day3: handleNumberChange(e.target.value) } })}
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="font-bold text-gray-600">ราคาเช่า 5 วัน</span>
-                <input 
-                  type="number" min="1" required 
-                  value={form.pricing?.day5 ?? ''} 
-                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day5: handleNumberChange(e.target.value)}})} 
-                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                <input
+                  type="number" min="1" required
+                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                  value={form.pricing?.day5 || ''}
+                  onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day5: handleNumberChange(e.target.value) } })}
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="font-bold text-gray-600">ราคาเช่า 7 วัน</span>
-                <input 
-                  type="number" min="1" required 
-                  value={form.pricing?.day7 ?? ''} 
-                  onChange={(e) => setForm({...form, pricing: {...form.pricing, day7: handleNumberChange(e.target.value)}})} 
-                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300" 
+                <input
+                  type="number" min="1" required
+                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
+                  value={form.pricing?.day7 || ''}
+                  onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day7: handleNumberChange(e.target.value) } })}
+                  className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
             </div>
@@ -258,14 +296,14 @@ export default function ManageBookPage() {
 
         <div className="mt-8">
           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">คำอธิบายเรื่องย่อ</label>
-          <textarea rows={4} value={form.description || ''} onChange={(e) => setForm({...form, description: e.target.value})} className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
+          <textarea rows={4} value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
         </div>
 
         <div className="mt-8 flex gap-4">
           <button type="button" onClick={() => router.back()} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">ยกเลิก</button>
-          <button 
-            type="submit" 
-            disabled={loading || isStockInvalid} 
+          <button
+            type="submit"
+            disabled={loading || isStockInvalid}
             className={`flex-1 py-4 font-bold rounded-2xl transition shadow-lg ${isStockInvalid ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
           >
             {isStockInvalid ? 'ข้อมูลสต็อกไม่ถูกต้อง' : (loading ? 'กำลังบันทึก...' : 'บันทึกข้อมูลหนังสือ')}
