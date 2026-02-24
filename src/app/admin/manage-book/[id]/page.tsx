@@ -1,21 +1,17 @@
 'use client';
 
-
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-
 
 export default function ManageBookPage() {
   const router = useRouter();
   const params = useParams();
   const isEdit = params.id !== 'new';
 
-
   const [loading, setLoading] = useState(false);
   const [imageType, setImageType] = useState<'url' | 'file'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
 
   // 🚀 กำหนดค่าเริ่มต้นเป็นสตริงว่างทั้งหมดเพื่อป้องกัน Uncontrolled Input Error
   const [form, setForm] = useState<any>({
@@ -28,9 +24,7 @@ export default function ManageBookPage() {
     pricing: { day3: '', day5: '', day7: '' }
   });
 
-
   const isStockInvalid = Number(form.stock?.available || 0) > Number(form.stock?.total || 0);
-
 
   const CATEGORIES = [
     "ทั้งหมด",
@@ -39,41 +33,32 @@ export default function ManageBookPage() {
     "วรรณกรรมเยาวชน", "เรื่องสั้น", "ไลท์โนเวล (Light Novel)", "นิยายวาย / การ์ตูนวาย",
     "นิยายยูริ / การ์ตูนยูริ", "ย้อนยุค / อิงประวัติศาสตร์",
 
-
     // --- กลุ่มแนวเรื่อง (Genre) ---
     "แอ็กชัน (Action)", "แฟนตาซี (Fantasy)", "ระทึกขวัญ (Thriller)", "สืบสวนสอบสวน (Mystery)",
     "อาชญากรรม", "ดราม่า", "โรแมนติก", "ตลก (Comedy)", "มิตรภาพ / ชีวิตวัยรุ่น", "เยียวยาจิตใจ",
 
-
     // --- กลุ่มการ์ตูน ---
     "มังงะ (Manga)", "การ์ตูนความรู้",
-
 
     // --- กลุ่มความรู้และวิชาการ ---
     "วิทยาศาสตร์", "ชีววิทยา", "ประวัติศาสตร์", "ปรัชญา", "จิตวิทยา", "สารคดี",
     "ความรู้ทั่วไป", "ภาษาต่างประเทศ", "พจนานุกรม", "คู่มือเตรียมสอบ",
 
-
     // --- กลุ่มพัฒนาตนเองและธุรกิจ ---
     "การพัฒนาตนเอง (How To)", "บริหารธุรกิจ", "การเงินการลงทุน", "การตลาด / การจัดการ",
 
-
     // --- กลุ่มคอมพิวเตอร์และเทคโนโลยี ---
     "คอมพิวเตอร์ / โปรแกรมมิ่ง", "AI / Data Science", "Database", "เว็บดีไซน์", "คู่มือการใช้งาน",
-
 
     // --- กลุ่มไลฟ์สไตล์ ---
     "ท่องเที่ยว", "อาหาร", "สุขภาพ / ความงาม", "สัตว์เลี้ยง", "บ้านและสวน",
     "งานอดิเรก / งานฝีมือ", "เกม", "โหราศาสตร์ / ดูดวง", "ธรรมะ / ศาสนา",
 
-
     // --- กลุ่มแม่และเด็ก ---
     "หนังสือเด็ก / นิทาน", "คู่มือเลี้ยงลูก (แม่และเด็ก)", "กิจกรรมเสริมทักษะ",
 
-
     "หนังสือต่างประเทศ", "อื่นๆ"
   ];
-
 
   useEffect(() => {
     if (isEdit) {
@@ -81,7 +66,6 @@ export default function ManageBookPage() {
         try {
           const res = await api.get(`/books/${params.id}`);
           const data = res.data;
-
 
           setForm({
             title: data.title || '',
@@ -100,7 +84,6 @@ export default function ManageBookPage() {
             }
           });
 
-
           if (data.coverImage?.startsWith('/uploads') || data.coverImage?.startsWith('http')) {
             // หมายเหตุ: ถ้าใช้ Cloudinary ลิงก์จะเป็น http แต่เราอาจจะยังให้แอดมินเลือกสลับโหมดได้
             setImageType(data.coverImage?.startsWith('http') && !data.coverImage?.includes('cloudinary') ? 'url' : 'file');
@@ -114,16 +97,31 @@ export default function ManageBookPage() {
     }
   }, [isEdit, params.id, router]);
 
+  // 🚀 ฟังก์ชันเช็คขนาดไฟล์ก่อนนำไปเก็บใน State
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // ตรวจสอบขนาดไฟล์ต้องไม่เกิน 2 MB
+      const maxSize = 2 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('ขนาดไฟล์หน้าปกต้องไม่เกิน 2 MB ครับ กรุณาเลือกรูปใหม่');
+        e.target.value = ''; // รีเซ็ตค่า input เพื่อให้กดเลือกไฟล์เดิมซ้ำได้ถ้าเปลี่ยนใจ
+        setSelectedFile(null);
+        return;
+      }
+      setSelectedFile(file);
+    } else {
+      setSelectedFile(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
 
     const t = Number(form.stock?.total || 0);
     const d3 = Number(form.pricing?.day3 || 0);
     const d5 = Number(form.pricing?.day5 || 0);
     const d7 = Number(form.pricing?.day7 || 0);
-
 
     if (t <= 0) {
       alert('สต็อกทั้งหมดต้องมีอย่างน้อย 1 เล่ม!');
@@ -142,11 +140,9 @@ export default function ManageBookPage() {
       return;
     }
 
-
     setLoading(true);
     try {
       let finalCoverImage = form.coverImage;
-
 
       if (imageType === 'file' && selectedFile) {
         const formData = new FormData();
@@ -156,7 +152,6 @@ export default function ManageBookPage() {
         });
         finalCoverImage = uploadRes.data.url;
       }
-
 
       const payload = {
         ...form,
@@ -171,7 +166,6 @@ export default function ManageBookPage() {
           day7: d7
         }
       };
-
 
       if (isEdit) {
         await api.patch(`/books/${params.id}`, payload);
@@ -189,12 +183,10 @@ export default function ManageBookPage() {
     }
   };
 
-
   const handleNumberChange = (value: string) => {
     const cleanValue = value.replace(/-/g, '');
     return cleanValue === '' ? '' : cleanValue;
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-6">
@@ -202,7 +194,6 @@ export default function ManageBookPage() {
         <h1 className="text-2xl font-black text-gray-900 mb-8">
           {isEdit ? '📝 แก้ไขรายละเอียดหนังสือ' : '➕ เพิ่มหนังสือใหม่'}
         </h1>
-
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -214,7 +205,6 @@ export default function ManageBookPage() {
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">ผู้แต่ง</label>
               <input type="text" required value={form.author || ''} onChange={(e) => setForm({ ...form, author: e.target.value })} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
-
 
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">หมวดหมู่ (เลือกได้มากกว่า 1)</label>
@@ -241,7 +231,6 @@ export default function ManageBookPage() {
               </div>
             </div>
 
-
             <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 mt-4">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-xs font-bold text-blue-900 uppercase">รูปหน้าปก</label>
@@ -255,13 +244,18 @@ export default function ManageBookPage() {
                 <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({ ...form, coverImage: e.target.value })} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
               ) : (
                 <div className="space-y-2">
-                  <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                  <input 
+                    type="file" 
+                    accept="image/jpeg, image/png, image/webp" 
+                    onChange={handleFileChange} // 🚀 เปลี่ยนมาใช้ฟังก์ชันที่เช็คขนาดไฟล์แล้ว
+                    className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" 
+                  />
+                  <p className="text-[10px] text-gray-400 font-bold">ไฟล์ JPG, PNG ขนาดไม่เกิน 2 MB</p>
                   {isEdit && form.coverImage && <p className="text-[10px] text-gray-400 italic truncate">ไฟล์ปัจจุบัน: {form.coverImage}</p>}
                 </div>
               )}
             </div>
           </div>
-
 
           <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 h-fit">
             <p className="font-bold text-gray-700 mb-2">📊 การตั้งค่าสต็อกและราคา</p>
@@ -288,7 +282,6 @@ export default function ManageBookPage() {
               </div>
             </div>
             {isStockInvalid && <p className="text-[10px] text-red-500 font-bold leading-tight">⚠️ จำนวนพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด</p>}
-
 
             <div className="space-y-3 pt-4 border-t border-gray-200 mt-4">
               <div className="flex justify-between items-center text-sm">
@@ -325,12 +318,10 @@ export default function ManageBookPage() {
           </div>
         </div>
 
-
         <div className="mt-8">
           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">คำอธิบายเรื่องย่อ</label>
           <textarea rows={4} value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
         </div>
-
 
         <div className="mt-8 flex gap-4">
           <button type="button" onClick={() => router.back()} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">ยกเลิก</button>
