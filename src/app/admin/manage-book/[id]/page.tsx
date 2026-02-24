@@ -101,7 +101,7 @@ export default function ManageBookPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // ตรวจสอบขนาดไฟล์ต้องไม่เกิน 2 MB
+      // ตรวจสอบขนาดไฟล์ต้องไม่เกิน 2 MB (2 * 1024 * 1024 bytes)
       const maxSize = 2 * 1024 * 1024;
       if (file.size > maxSize) {
         alert('ขนาดไฟล์หน้าปกต้องไม่เกิน 2 MB ครับ กรุณาเลือกรูปใหม่');
@@ -240,16 +240,16 @@ export default function ManageBookPage() {
                 </div>
               </div>
               {imageType === 'url' ? (
-                // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                 <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({ ...form, coverImage: e.target.value })} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
               ) : (
                 <div className="space-y-2">
                   <input 
                     type="file" 
                     accept="image/jpeg, image/png, image/webp" 
-                    onChange={handleFileChange} // 🚀 เปลี่ยนมาใช้ฟังก์ชันที่เช็คขนาดไฟล์แล้ว
+                    onChange={handleFileChange} // 🚀 เรียกใช้ฟังก์ชันดักจับขนาดไฟล์
                     className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" 
                   />
+                  {/* 🚀 เปลี่ยนข้อความเป็น 2 MB */}
                   <p className="text-[10px] text-gray-400 font-bold">ไฟล์ JPG, PNG ขนาดไม่เกิน 2 MB</p>
                   {isEdit && form.coverImage && <p className="text-[10px] text-gray-400 italic truncate">ไฟล์ปัจจุบัน: {form.coverImage}</p>}
                 </div>
@@ -264,7 +264,6 @@ export default function ManageBookPage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase">สต็อกทั้งหมด</label>
                 <input
                   type="number" min="1" required
-                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                   value={form.stock?.total || ''}
                   onChange={(e) => setForm({ ...form, stock: { ...form.stock, total: handleNumberChange(e.target.value) } })}
                   className="w-full p-2 border rounded-lg"
@@ -274,7 +273,6 @@ export default function ManageBookPage() {
                 <label className={`block text-[10px] font-bold uppercase ${isStockInvalid ? 'text-red-500' : 'text-gray-400'}`}>พร้อมใช้งาน</label>
                 <input
                   type="number" min="0" required
-                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                   value={form.stock?.available || ''}
                   onChange={(e) => setForm({ ...form, stock: { ...form.stock, available: handleNumberChange(e.target.value) } })}
                   className={`w-full p-2 border rounded-lg ${isStockInvalid ? 'border-red-500 bg-red-50' : ''}`}
@@ -288,7 +286,6 @@ export default function ManageBookPage() {
                 <span className="font-bold text-gray-600">ราคาเช่า 3 วัน</span>
                 <input
                   type="number" min="1" required
-                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                   value={form.pricing?.day3 || ''}
                   onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day3: handleNumberChange(e.target.value) } })}
                   className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
@@ -298,7 +295,6 @@ export default function ManageBookPage() {
                 <span className="font-bold text-gray-600">ราคาเช่า 5 วัน</span>
                 <input
                   type="number" min="1" required
-                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                   value={form.pricing?.day5 || ''}
                   onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day5: handleNumberChange(e.target.value) } })}
                   className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
@@ -308,7 +304,6 @@ export default function ManageBookPage() {
                 <span className="font-bold text-gray-600">ราคาเช่า 7 วัน</span>
                 <input
                   type="number" min="1" required
-                  // 🚀 เพิ่ม || '' เพื่อป้องกัน Uncontrolled Input
                   value={form.pricing?.day7 || ''}
                   onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, day7: handleNumberChange(e.target.value) } })}
                   className="w-24 p-2 border rounded-lg text-right font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-300"
