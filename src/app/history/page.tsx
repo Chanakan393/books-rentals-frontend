@@ -82,8 +82,8 @@ export default function HistoryPage() {
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">ประวัติการเช่าของฉัน 📖</h1>
             <p className="text-gray-500 mt-1">ติดตามสถานะและตรวจสอบกำหนดคืนหนังสือของคุณ</p>
           </div>
-          <button 
-            onClick={fetchHistory} 
+          <button
+            onClick={fetchHistory}
             className="text-xs font-bold bg-white border border-gray-200 px-5 py-2.5 rounded-2xl shadow-sm hover:bg-gray-50 transition flex items-center gap-2"
           >
             🔄 รีเฟรชข้อมูล
@@ -103,17 +103,17 @@ export default function HistoryPage() {
             {history.map((item) => {
               const canCancel = item.status === 'booked';
               const needsNewSlip = item.paymentStatus === 'pending' && item.status !== 'cancelled';
-              
+
               // 🚀 1. ปรับ Logic การนับวัน: ลบเวลาทิ้งให้เหลือแต่ "วันที่"
               const today = new Date();
-              today.setHours(0, 0, 0, 0); 
-              
+              today.setHours(0, 0, 0, 0);
+
               const dueDate = new Date(item.dueDate);
               dueDate.setHours(0, 0, 0, 0);
 
               // 🚀 2. จะ Overdue ก็ต่อเมื่อ วันนี้ > วันกำหนดคืน (ถ้าวันนี้ตรงกับวันคืนพอดี จะยังไม่ Overdue)
               const isOverdue = item.status === 'rented' && today > dueDate;
-              
+
               return (
                 <div key={item._id} className={`bg-white rounded-[1.5rem] shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 group ${isOverdue ? 'border-red-300' : 'border-gray-100'}`}>
                   <div className="flex flex-col md:flex-row">
@@ -131,7 +131,7 @@ export default function HistoryPage() {
                           <div className="flex flex-wrap gap-3">
                             <span className={`px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest ${getStatusBadge(item.status)}`}>{item.status}</span>
                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getPaymentBadge(item.paymentStatus)}`}>{item.paymentStatus === 'refund_verification' ? 'รอแอดมินคืนเงิน' : item.paymentStatus}</span>
-                            
+
                             {isOverdue && (
                               <span className="px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-red-600 text-white animate-pulse shadow-sm">
                                 ⚠️ เกินกำหนดคืน
@@ -143,19 +143,25 @@ export default function HistoryPage() {
                           <button onClick={() => handleCancel(item._id)} className="shrink-0 text-[10px] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 px-3 py-1.5 rounded-xl font-black transition-all uppercase">ยกเลิกการจอง</button>
                         )}
                       </div>
-                      
+
                       {needsNewSlip && (
                         <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex justify-between items-center animate-pulse">
-                           <p className="text-[11px] font-bold text-amber-700 italic">⚠️ สลิปไม่ผ่านการตรวจสอบ โปรดอัปโหลดใหม่อีกครั้ง</p>
-                           <button onClick={() => router.push(`/payment?rentalId=${item._id}&amount=${item.cost}`)} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black hover:bg-amber-700 transition">อัปโหลดสลิปใหม่</button>
+                          <p className="text-[11px] font-bold text-amber-700 italic">⚠️ สลิปไม่ผ่านการตรวจสอบ โปรดอัปโหลดใหม่อีกครั้ง</p>
+                          <button onClick={() => router.push(`/payment?rentalId=${item._id}&amount=${item.cost}`)} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black hover:bg-amber-700 transition">อัปโหลดสลิปใหม่</button>
                         </div>
                       )}
 
                       {isOverdue && (
-                        <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 border-dashed rounded-2xl flex items-center justify-center">
-                          <p className="text-sm font-black text-red-600 text-center tracking-tight">
-                            🚨 หนังสือเล่มนี้เกินกำหนดคืน! กรุณานำมาคืนและชำระค่าปรับที่หน้าร้าน <br/>
-                            <span className="text-xs font-bold text-red-400 mt-1 block">(คุณจะไม่สามารถเช่าเล่มใหม่ได้จนกว่าจะเคลียร์รายการนี้)</span>
+                        <div className="mb-6 p-5 bg-red-600 rounded-[1.5rem] flex flex-col items-center justify-center animate-pulse shadow-xl shadow-red-200">
+                          <p className="text-white font-black text-sm uppercase tracking-widest mb-1">
+                            🚨 คืนเลท! ค่าปรับสะสมปัจจุบัน
+                          </p>
+                          <p className="text-white text-4xl font-black">
+                            {/* ดึงค่า currentFine ที่ส่งมาจากหลังบ้านมาโชว์ */}
+                            {(item as any).currentFine?.toLocaleString() || '0'} ฿
+                          </p>
+                          <p className="text-red-100 text-[10px] font-bold mt-2 italic bg-red-800/40 px-3 py-1 rounded-full">
+                            กรุณานำมาคืนและชำระค่าปรับที่หน้าร้าน
                           </p>
                         </div>
                       )}
@@ -165,7 +171,7 @@ export default function HistoryPage() {
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">วันที่เริ่มยืม</p>
                           <p className="text-gray-800 font-extrabold text-base">{new Date(item.borrowDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
-                        
+
                         <div className={`p-4 rounded-2xl border flex flex-col justify-center items-center shadow-inner transition-colors ${isOverdue ? 'bg-red-600 border-red-700 text-white animate-bounce' : 'bg-red-50 border-red-100 text-red-600'}`}>
                           <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isOverdue ? 'text-red-100' : 'text-red-400'}`}>
                             {isOverdue ? 'เลยกำหนดคืน (OVERDUE)' : 'ต้องคืนภายใน (RETURN BY)'}

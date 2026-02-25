@@ -16,15 +16,14 @@ export default function AdminDashboard() {
   const calculateFine = (dueDate: string) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    
+
     const due = new Date(dueDate);
     due.setHours(0, 0, 0, 0);
-    
+
     if (now <= due) return 0;
-    
     const diffTime = Math.abs(now.getTime() - due.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays * 10; 
+    return diffDays * 100;
   };
 
   const handleUserClick = async (userId: string) => {
@@ -126,40 +125,39 @@ export default function AdminDashboard() {
                 {payments.length === 0 && <div className="bg-white p-12 text-center rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 font-sans">ไม่มีรายการในวันนี้</div>}
                 {payments.map((p: any) => {
                   const isRefundRequest = p.status === 'refund_verification' || p.rentalId?.paymentStatus === 'refund_verification';
-                  
+
                   return (
                     <div key={p._id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6 animate-in fade-in duration-500">
                       <div className="w-full md:w-48 h-64 bg-gray-50 rounded-2xl overflow-hidden border shrink-0">
                         {/* 🚀 แก้ไข: รองรับทั้งรูประบบเก่า (Local) และระบบใหม่ (Cloudinary) */}
-                        <img 
-                          src={p.slipUrl?.startsWith('http') ? p.slipUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${p.slipUrl}`} 
-                          className="w-full h-full object-contain" 
-                          alt="Slip" 
+                        <img
+                          src={p.slipUrl?.startsWith('http') ? p.slipUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${p.slipUrl}`}
+                          className="w-full h-full object-contain"
+                          alt="Slip"
                         />
                       </div>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
                             <h3 className="text-3xl font-black text-gray-800">{p.amount} ฿</h3>
-                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                              isRefundRequest ? 'bg-blue-100 text-blue-600 animate-pulse' :
-                              p.status === 'paid' ? 'bg-green-100 text-green-600' : 
-                              p.status === 'refunded' ? 'bg-indigo-100 text-indigo-600' :
-                              p.status === 'refund_rejected' ? 'bg-orange-100 text-orange-600' :
-                              p.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-600'
-                            }`}>
-                              {isRefundRequest ? 'รอตรวจสอบการคืนเงิน' : 
-                               p.status === 'paid' ? 'อนุมัติแล้ว' : 
-                               p.status === 'refunded' ? 'คืนเงินสำเร็จ' : 
-                               p.status === 'refund_rejected' ? 'ปฏิเสธคืนเงิน' : 
-                               p.status === 'rejected' ? 'สลิปไม่ถูกต้อง' : 'รอตรวจสอบ'}
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${isRefundRequest ? 'bg-blue-100 text-blue-600 animate-pulse' :
+                              p.status === 'paid' ? 'bg-green-100 text-green-600' :
+                                p.status === 'refunded' ? 'bg-indigo-100 text-indigo-600' :
+                                  p.status === 'refund_rejected' ? 'bg-orange-100 text-orange-600' :
+                                    p.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-600'
+                              }`}>
+                              {isRefundRequest ? 'รอตรวจสอบการคืนเงิน' :
+                                p.status === 'paid' ? 'อนุมัติแล้ว' :
+                                  p.status === 'refunded' ? 'คืนเงินสำเร็จ' :
+                                    p.status === 'refund_rejected' ? 'ปฏิเสธคืนเงิน' :
+                                      p.status === 'rejected' ? 'สลิปไม่ถูกต้อง' : 'รอตรวจสอบ'}
                             </span>
                           </div>
                           <p className="text-gray-600 mt-2 font-medium italic">
                             👤 <button onClick={() => handleUserClick(p.rentalId?.userId?._id)} className="font-black text-blue-600 hover:underline">{p.rentalId?.userId?.username || 'ไม่ทราบชื่อ'}</button>
                           </p>
                           <p className="text-gray-600 text-sm font-medium italic underline">📚 ยืมเรื่อง: {p.rentalId?.bookId?.title || 'ไม่พบข้อมูลหนังสือ'}</p>
-                          
+
                           {isRefundRequest && (
                             <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
                               <p className="text-[11px] text-blue-600 font-black uppercase">ℹ️ รายการขอยกเลิก: โปรดตรวจสอบการโอนคืนเงินและยืนยันด้านล่าง</p>
@@ -212,11 +210,10 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-5 text-center">
                               <div className="flex flex-col gap-1 items-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
-                                  r.status === 'booked' ? 'bg-blue-100 text-blue-600' : 
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${r.status === 'booked' ? 'bg-blue-100 text-blue-600' :
                                   r.status === 'rented' ? 'bg-orange-100 text-orange-600' :
-                                  r.status === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                                }`}> {r.status} </span>
+                                    r.status === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                                  }`}> {r.status} </span>
                                 {r.status === 'rented' && fine > 0 && (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-red-600 text-white animate-pulse">เลท {fine} ฿</span>
                                 )}
@@ -230,9 +227,16 @@ export default function AdminDashboard() {
                                 <button onClick={() => handlePickup(r._id)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-blue-700 shadow-sm transition">ยืนยันรับของ</button>
                               )}
                               {r.status === 'rented' && (
-                                <button onClick={() => { if(fine > 0) { if(confirm(`รายการคืนล่าช้า ปรับ ${fine} ฿ \nได้รับเงินแล้วใช่ไหม?`)) handleReturn(r._id); } else handleReturn(r._id); }} 
-                                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition ${fine > 0 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg' : 'bg-green-600 hover:bg-green-700 text-white'}`}>
-                                  {fine > 0 ? 'คืนหนังสือ + ปรับ' : 'รับคืนปกติ'}
+                                <button
+                                  onClick={() => {
+                                    if (fine > 0) {
+                                      if (confirm(`รายการคืนล่าช้า ปรับ ${fine} ฿ \nได้รับเงินค่าปรับเรียบร้อยแล้วใช่ไหม?`)) handleReturn(r._id);
+                                    } else handleReturn(r._id);
+                                  }}
+                                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition shadow-md ${fine > 0 ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' : 'bg-green-600 hover:bg-green-700 text-white'
+                                    }`}
+                                >
+                                  {fine > 0 ? `คืน + ปรับ ${fine} ฿` : 'รับคืนปกติ'}
                                 </button>
                               )}
                             </td>
