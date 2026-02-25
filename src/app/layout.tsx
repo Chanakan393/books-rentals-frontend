@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'; // <--- เพิ่มบรรทั
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ระบบยืม-คืนหนังสือ',
+  title: 'Book Rental Shop',
 };
 
 export default function RootLayout({
