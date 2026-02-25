@@ -23,8 +23,8 @@ export default function EditProfilePage() {
         const res = await api.get('/users/me');
         setUser(res.data);
         setForm({
-          username: res.data.username,
-          email: res.data.email,
+          username: res.data.username || '',
+          email: res.data.email || '',
           password: '',
           phoneNumber: res.data.phoneNumber || '',
           address: res.data.address || '',
@@ -38,45 +38,43 @@ export default function EditProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚀 1. เช็คชื่อผู้ใช้ (ห้ามเป็นตัวเลขล้วน)
-    if (/^\d+$/.test(form.username.trim())) {
+    // 🚀 1. เช็คชื่อผู้ใช้ (ห้ามเป็นตัวเลขล้วน + ห้ามอักษรพิเศษ)
+    const trimmedUser = form.username.trim();
+    if (/^\d+$/.test(trimmedUser)) {
       alert('ชื่อผู้ใช้งานต้องมีตัวอักษรผสมอยู่ด้วย ไม่สามารถเป็นตัวเลขล้วนได้');
       return;
     }
-
-    // 🚀 เช็ค Username
     const usernameRegex = /^[a-zA-Z0-9ก-ฮะ-์]+$/;
-    if (!usernameRegex.test(form.username.trim())) {
-      alert('ชื่อผู้ใช้งานห้ามมีอักษรพิเศษหรือช่องว่าง');
+    if (!usernameRegex.test(trimmedUser)) {
+      alert('ชื่อผู้ใช้งานห้ามมีอักขระพิเศษหรือช่องว่าง');
       return;
     }
 
-    // 2. ล้างช่องว่างและขีดออกให้เหลือแต่ตัวเลข
+    // 2. ล้างช่องว่างและขีดเบอร์โทร
     const cleanPhone = form.phoneNumber.replace(/[- ]/g, '');
-
-    // 3. เช็คเงื่อนไขอื่นๆ
     const phoneRegex = /^(06|08|09)\d{8}$/;
     if (!phoneRegex.test(cleanPhone)) {
       alert('เบอร์โทรศัพท์ต้องขึ้นด้วย 06, 08, 09 และมี 10 หลักเท่านั้น');
       return;
     }
-    if (form.address.trim().length < 10) {
+
+    // 3. เช็คที่อยู่ (ต้องมีตัวหนังสือ และห้ามอักษรพิเศษยกเว้น / . และช่องว่าง)
+    const addr = form.address.trim();
+    if (addr.length < 10) {
       alert('ที่อยู่ต้องมีความยาวอย่างน้อย 10 ตัวอักษร');
       return;
     }
-    if (form.password && (form.password.length < 8 || form.password.length > 20)) {
-      alert('รหัสผ่านต้องมีความยาวระหว่าง 8 ถึง 20 ตัวอักษร');
+    if (!/[a-zA-Zก-ฮ]/.test(addr)) {
+      alert('ที่อยู่ต้องมีตัวอักษรประกอบด้วย (ห้ามกรอกแค่ตัวเลข)');
       return;
     }
-
-    // 🚀 ตรวจสอบอักษรพิเศษในที่อยู่
     const addressRegex = /^[a-zA-Z0-9ก-ฮะ-์\s./]+$/;
-    if (!addressRegex.test(form.address)) {
+    if (!addressRegex.test(addr)) {
       alert('ที่อยู่ห้ามมีอักษรพิเศษ (อนุญาตเฉพาะ . และ / เท่านั้น)');
       return;
     }
 
-    // 🚀 ตรวจสอบรหัสไปรษณีย์
+    // 4. เช็ครหัสไปรษณีย์ 5 หลัก
     if (!/^\d{5}$/.test(form.zipcode)) {
       alert('รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลักเท่านั้น');
       return;
@@ -84,10 +82,8 @@ export default function EditProfilePage() {
 
     setLoading(true);
     try {
-      const payload: any = { ...form, phoneNumber: cleanPhone };
-      if (!payload.password) {
-        delete payload.password;
-      }
+      const payload: any = { ...form, username: trimmedUser, phoneNumber: cleanPhone };
+      if (!payload.password) delete payload.password;
 
       const res = await api.patch(`/users/${user._id}`, payload);
       localStorage.setItem('user', JSON.stringify(res.data));
@@ -106,20 +102,22 @@ export default function EditProfilePage() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">แก้ไขโปรไฟล์</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          
+          {/* 1. Username (บนสุด!) */}
           <div className="group">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">รหัสไปรษณีย์</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ชื่อผู้ใช้งาน (Username)</label>
             <input
-              type="text"
-              maxLength={5}
-              value={form.zipcode}
-              onChange={(e) => setForm({ ...form, zipcode: e.target.value })}
-              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold"
+              type="text" required
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
             />
           </div>
 
+          {/* 2. Email */}
           <div className="group">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">อีเมล (Email)</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">อีเมล (Email)</label>
             <input
               type="email" required
               value={form.email}
@@ -128,10 +126,11 @@ export default function EditProfilePage() {
             />
           </div>
 
+          {/* 3. Password */}
           <div className="group">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ตั้งรหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ตั้งรหัสผ่านใหม่ (ระบุเมื่อต้องการเปลี่ยนเท่านั้น)</label>
             <input
-              type="password" minLength={8} maxLength={20}
+              type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
@@ -139,25 +138,39 @@ export default function EditProfilePage() {
             />
           </div>
 
+          {/* 4. Phone Number */}
           <div className="group">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">เบอร์โทรศัพท์ติดต่อ (06, 08, 09)</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">เบอร์โทรศัพท์ติดต่อ</label>
             <input
               type="tel" required
               value={form.phoneNumber}
               onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
-              placeholder="เช่น 081-234-5678"
+              placeholder="08X-XXX-XXXX"
             />
           </div>
 
+          {/* 5. Address */}
           <div className="group">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest group-focus-within:text-blue-500 transition-colors">ที่อยู่สำหรับการจัดส่ง / ติดต่อ</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ที่อยู่จัดส่ง</label>
             <textarea
-              rows={4} required minLength={10}
+              rows={3} required
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800 resize-none"
-              placeholder="เลขที่บ้าน, ถนน, แขวง/ตำบล, เขต/อำเภอ, จังหวัด..."
+              placeholder="เลขที่บ้าน, ถนน, ตำบล, อำเภอ..."
+            />
+          </div>
+
+          {/* 6. Zipcode (ล่างสุด!) */}
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">รหัสไปรษณีย์</label>
+            <input
+              type="text" required maxLength={5}
+              value={form.zipcode}
+              onChange={(e) => setForm({ ...form, zipcode: e.target.value })}
+              className="w-full p-4 bg-gray-50 border-transparent border-2 rounded-2xl outline-none focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+              placeholder="5XXXX"
             />
           </div>
 
@@ -165,11 +178,10 @@ export default function EditProfilePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-blue-600 text-white font-black rounded-[1.5rem] hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest disabled:bg-gray-200 disabled:shadow-none"
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-[1.5rem] hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest disabled:bg-gray-200"
             >
-              {loading ? 'กำลังบันทึกข้อมูล...' : 'บันทึกการเปลี่ยนแปลง'}
+              {loading ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
             </button>
-            <p className="text-center text-[10px] text-gray-300 font-bold uppercase mt-6 tracking-tighter italic">ระบบจะทำการตรวจสอบข้อมูลหลังบันทึก</p>
           </div>
         </form>
       </div>
