@@ -104,7 +104,6 @@ export default function EditProfilePage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           
-          {/* 1. Username (บนสุด!) */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ชื่อผู้ใช้งาน (Username)</label>
             <input
@@ -115,7 +114,6 @@ export default function EditProfilePage() {
             />
           </div>
 
-          {/* 2. Email */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">อีเมล (Email)</label>
             <input
@@ -126,7 +124,6 @@ export default function EditProfilePage() {
             />
           </div>
 
-          {/* 3. Password */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ตั้งรหัสผ่านใหม่ (ระบุเมื่อต้องการเปลี่ยนเท่านั้น)</label>
             <input
@@ -138,7 +135,6 @@ export default function EditProfilePage() {
             />
           </div>
 
-          {/* 4. Phone Number */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">เบอร์โทรศัพท์ติดต่อ</label>
             <input
@@ -150,7 +146,6 @@ export default function EditProfilePage() {
             />
           </div>
 
-          {/* 5. Address */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">ที่อยู่จัดส่ง</label>
             <textarea
@@ -162,7 +157,6 @@ export default function EditProfilePage() {
             />
           </div>
 
-          {/* 6. Zipcode (ล่างสุด!) */}
           <div className="group">
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">รหัสไปรษณีย์</label>
             <input
@@ -174,13 +168,21 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <div className="pt-4">
+          {/* 🚀 ปุ่มกดยกเลิกและบันทึกแบบคู่กัน */}
+          <div className="pt-4 flex gap-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-[1.5rem] hover:bg-gray-200 transition uppercase tracking-widest text-xs"
+            >
+              ยกเลิก
+            </button>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-blue-600 text-white font-black rounded-[1.5rem] hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest disabled:bg-gray-200"
+              className="flex-[2] py-4 bg-blue-600 text-white font-black rounded-[1.5rem] hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest text-xs disabled:bg-gray-200"
             >
-              {loading ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+              {loading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
             </button>
           </div>
         </form>

@@ -114,7 +114,7 @@ const CATEGORIES = [
     <div className="min-h-screen bg-gray-50 pb-12 font-sans">
       <section className="bg-blue-600 text-white py-12 px-6 mb-12 shadow-md">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl font-black mb-4 tracking-tight uppercase">ระบบยืม-คืนหนังสือออนไลน์</h1>
+          <h1 className="text-4xl font-black mb-4 tracking-tight uppercase">Book Rental Shop</h1>
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-2">
             <input 
               type="text" 
