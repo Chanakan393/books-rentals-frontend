@@ -20,7 +20,7 @@ export default function MemberDetailPage() {
         setUser(userRes.data);
 
         // 2. ดึงประวัติการเช่าจาก Rentals API เส้นสำหรับ Admin
-        const historyRes = await api.get(`/rentals/admin/user-history/${params.id}`);
+        const historyRes = await api.get(`/rentals/history/${params.id}`);
         setHistory(historyRes.data);
       } catch (error) {
         console.error('Error fetching member details:', error);
