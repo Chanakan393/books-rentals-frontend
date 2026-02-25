@@ -13,7 +13,6 @@ export default function ManageBookPage() {
   const [imageType, setImageType] = useState<'url' | 'file'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // 🚀 กำหนดค่าเริ่มต้นเป็นสตริงว่างทั้งหมดเพื่อป้องกัน Uncontrolled Input Error
   const [form, setForm] = useState<any>({
     title: '',
     author: '',
@@ -60,6 +59,9 @@ export default function ManageBookPage() {
     "หนังสือต่างประเทศ", "อื่นๆ"
   ];
 
+  // 🚀 กรองเอา "ทั้งหมด" ออก เพื่อไม่ให้แอดมินเลือกเป็นหมวดหมู่จริง
+  const ADMIN_CATEGORIES = CATEGORIES.filter(cat => cat !== "ทั้งหมด");
+
   useEffect(() => {
     if (isEdit) {
       const fetchBook = async () => {
@@ -85,7 +87,6 @@ export default function ManageBookPage() {
           });
 
           if (data.coverImage?.startsWith('/uploads') || data.coverImage?.startsWith('http')) {
-            // หมายเหตุ: ถ้าใช้ Cloudinary ลิงก์จะเป็น http แต่เราอาจจะยังให้แอดมินเลือกสลับโหมดได้
             setImageType(data.coverImage?.startsWith('http') && !data.coverImage?.includes('cloudinary') ? 'url' : 'file');
           }
         } catch (error) {
@@ -97,15 +98,13 @@ export default function ManageBookPage() {
     }
   }, [isEdit, params.id, router]);
 
-  // 🚀 ฟังก์ชันเช็คขนาดไฟล์ก่อนนำไปเก็บใน State
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // ตรวจสอบขนาดไฟล์ต้องไม่เกิน 2 MB (2 * 1024 * 1024 bytes)
       const maxSize = 2 * 1024 * 1024;
       if (file.size > maxSize) {
         alert('ขนาดไฟล์หน้าปกต้องไม่เกิน 2 MB ครับ กรุณาเลือกรูปใหม่');
-        e.target.value = ''; // รีเซ็ตค่า input เพื่อให้กดเลือกไฟล์เดิมซ้ำได้ถ้าเปลี่ยนใจ
+        e.target.value = '';
         setSelectedFile(null);
         return;
       }
@@ -208,8 +207,8 @@ export default function ManageBookPage() {
 
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">หมวดหมู่ (เลือกได้มากกว่า 1)</label>
-              <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 h-40 overflow-y-auto">
-                {CATEGORIES.map((cat) => (
+              <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 h-64 overflow-y-auto">
+                {ADMIN_CATEGORIES.map((cat) => (
                   <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
@@ -225,7 +224,7 @@ export default function ManageBookPage() {
                       }}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
-                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 transition-colors select-none">{cat}</span>
+                    <span className="text-[11px] font-bold text-gray-600 group-hover:text-blue-600 transition-colors select-none">{cat}</span>
                   </label>
                 ))}
               </div>
@@ -243,13 +242,12 @@ export default function ManageBookPage() {
                 <input type="text" placeholder="https://..." value={form.coverImage || ''} onChange={(e) => setForm({ ...form, coverImage: e.target.value })} className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
               ) : (
                 <div className="space-y-2">
-                  <input 
-                    type="file" 
-                    accept="image/jpeg, image/png, image/webp" 
-                    onChange={handleFileChange} // 🚀 เรียกใช้ฟังก์ชันดักจับขนาดไฟล์
-                    className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" 
+                  <input
+                    type="file"
+                    accept="image/jpeg, image/png, image/webp"
+                    onChange={handleFileChange}
+                    className="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                   />
-                  {/* 🚀 เปลี่ยนข้อความเป็น 2 MB */}
                   <p className="text-[10px] text-gray-400 font-bold">ไฟล์ JPG, PNG ขนาดไม่เกิน 2 MB</p>
                   {isEdit && form.coverImage && <p className="text-[10px] text-gray-400 italic truncate">ไฟล์ปัจจุบัน: {form.coverImage}</p>}
                 </div>
