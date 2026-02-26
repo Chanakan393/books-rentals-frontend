@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 function PaymentContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const rentalId = searchParams.get('rentalId');
   const amount = searchParams.get('amount');
 
@@ -34,13 +34,14 @@ function PaymentContent() {
         setPreview(null); // ล้าง state preview
         return;
       }
-      
+
       setFile(selectedFile);
       const objectUrl = URL.createObjectURL(selectedFile);
       setPreview(objectUrl);
     }
   };
 
+  // ค้นหาฟังก์ชัน handleSubmit ใน src\app\payment\page.tsx แล้ววางทับส่วนนี้ครับ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !rentalId || !amount) {
@@ -52,20 +53,20 @@ function PaymentContent() {
     try {
       const formData = new FormData();
       formData.append('rentalId', rentalId);
-      formData.append('amount', amount);
+      // 🚀 บังคับเป็น Number ก่อน แล้วส่งเป็น String ของตัวเลข
+      formData.append('amount', Number(amount).toString());
       formData.append('file', file);
 
       await api.post('/payment/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       alert('แจ้งชำระเงินสำเร็จ! สถานะของคุณคือ "รอตรวจสอบสลิป"');
       router.push('/history');
     } catch (error: any) {
-      console.error(error);
-      alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการอัปโหลดสลิป');
+      // 🚀 ปรับ alert ให้โชว์ Error จริงจาก Backend จะได้แก้ถูกจุด
+      const msg = error.response?.data?.message;
+      alert(Array.isArray(msg) ? msg.join('\n') : msg || 'เกิดข้อผิดพลาดในการอัปโหลดสลิป');
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +86,7 @@ function PaymentContent() {
         <div className="bg-blue-50/50 rounded-3xl p-6 mb-6 border border-blue-50 shadow-inner">
           <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">ยอดชำระสุทธิ</p>
           <p className="text-5xl font-black text-blue-600 mb-6 italic">{amount} <span className="text-xl font-bold not-italic">฿</span></p>
-          
+
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-blue-100 flex flex-col items-center">
             <div className="p-2 border-2 border-blue-50 rounded-2xl mb-4 bg-white">
               <img src={qrUrl} alt="QR Code" className="w-40 h-40 object-contain" />

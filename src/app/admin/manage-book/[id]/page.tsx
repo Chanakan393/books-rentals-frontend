@@ -116,41 +116,30 @@ export default function ManageBookPage() {
     }
   };
 
+  // ค้นหาฟังก์ชัน handleSubmit ใน src\app\admin\manage-book\[id]\page.tsx แล้ววางทับครับ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚀 1. บังคับเลือกหมวดหมู่
     if (isCategoryEmpty) {
       alert('กรุณาเลือกหมวดหมู่อย่างน้อย 1 หมวดหมู่ครับ!');
       return;
     }
 
+    // 🚀 แปลงค่าเป็น Number ให้ชัวร์ก่อนส่ง
     const t = Number(form.stock?.total || 0);
+    const a = Number(form.stock?.available || 0);
     const d3 = Number(form.pricing?.day3 || 0);
     const d5 = Number(form.pricing?.day5 || 0);
     const d7 = Number(form.pricing?.day7 || 0);
 
-    if (t <= 0) {
-      alert('สต็อกทั้งหมดต้องมีอย่างน้อย 1 เล่ม!');
-      return;
-    }
-    if (d3 <= 0 || d5 <= 0 || d7 <= 0) {
-      alert('ราคาเช่าต้องมากกว่า 0 บาท!');
-      return;
-    }
-    if (isStockInvalid) {
-      alert('จำนวนหนังสือพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด!');
-      return;
-    }
-    if (d3 >= d5 || d5 >= d7) {
-      alert('ราคาเช่าไม่ถูกต้อง! ต้องเรียงลำดับจากน้อยไปมาก (3 วัน < 5 วัน < 7 วัน)');
-      return;
-    }
+    if (t <= 0) { alert('สต็อกทั้งหมดต้องมีอย่างน้อย 1 เล่ม!'); return; }
+    if (d3 <= 0 || d5 <= 0 || d7 <= 0) { alert('ราคาเช่าต้องมากกว่า 0 บาท!'); return; }
+    if (a > t) { alert('จำนวนหนังสือพร้อมใช้งาน ห้ามมากกว่าสต็อกทั้งหมด!'); return; }
+    if (d3 >= d5 || d5 >= d7) { alert('ราคาเช่าไม่ถูกต้อง! ต้องเรียงลำดับ (3 วัน < 5 วัน < 7 วัน)'); return; }
 
     setLoading(true);
     try {
       let finalCoverImage = form.coverImage;
-
       if (imageType === 'file' && selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -160,15 +149,19 @@ export default function ManageBookPage() {
         finalCoverImage = uploadRes.data.url;
       }
 
+      // 🚀 จุดสำคัญ: สร้าง Payload ใหม่โดยไม่ใช้ ...form เพื่อคุม Type ให้เป็น Number
       const payload = {
-        ...form,
+        title: form.title,
+        author: form.author,
+        description: form.description,
+        category: form.category, // เป็น Array อยู่แล้ว
         coverImage: finalCoverImage,
         stock: {
-          total: t,
-          available: Number(form.stock?.available || 0)
+          total: t,          // ส่งค่าที่เป็น Number
+          available: a       // ส่งค่าที่เป็น Number
         },
         pricing: {
-          day3: d3,
+          day3: d3,          // ส่งค่าที่เป็น Number
           day5: d5,
           day7: d7
         }
@@ -184,7 +177,8 @@ export default function ManageBookPage() {
       router.push('/');
       router.refresh();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึก');
+      const backendMsg = error.response?.data?.message;
+      alert('บันทึกไม่สำเร็จ:\n' + (Array.isArray(backendMsg) ? backendMsg.join('\n') : backendMsg));
     } finally {
       setLoading(false);
     }
